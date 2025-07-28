@@ -1,69 +1,52 @@
-# app.py
 import streamlit as st
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd  # ✅ Needed for pd.get_dummies and pd.concat
-import model_utils
+import pandas as pd
+import model_utils as mu
 
-st.set_page_config(page_title="Data Preprocessing Comparison", layout="wide")
-st.title("🧪 Data Preprocessing Mini-Project")
-st.markdown("Compare model accuracy on raw vs. preprocessed data")
+st.set_page_config(page_title="Model Accuracy Dashboard", layout="wide")
+st.title("Compare Model Accuracy: Raw vs Preprocessed Data")
 
-# Sidebar dataset selector
-dataset_choice = st.sidebar.selectbox(
-    "Choose Dataset",
-    ("Heart Disease", "Loan Prediction", "Student Performance")
-)
+# Dataset selection
+dataset_name = st.selectbox("Select Dataset", [
+    "Heart Disease",
+    "Loan Prediction",
+    "Student Performance"
+])
 
-# Load and preprocess
-if dataset_choice == "Heart Disease":
-    df_raw = model_utils.load_heart_disease()
-    df_clean = model_utils.preprocess_heart_data(df_raw)
-    target_col = "target"
+# Load data
+if dataset_name == "Heart Disease":
+    raw_df = mu.load_heart_disease()
+    pre_df = mu.preprocess_heart_data(raw_df)
+    target = 'target'
 
-elif dataset_choice == "Loan Prediction":
-    df_raw = model_utils.load_loan_data()
-    df_raw = df_raw.dropna(subset=["Loan_Status"])  # remove rows where target is missing
-    df_clean = model_utils.preprocess_loan_data(df_raw)
-    target_col = "Loan_Status"
+elif dataset_name == "Loan Prediction":
+    raw_df = mu.load_loan_data()
+    pre_df = mu.preprocess_loan_data(raw_df)
+    target = 'Loan_Status'
 
-elif dataset_choice == "Student Performance":
-    df_raw = model_utils.load_student_data()
-    df_clean = model_utils.preprocess_student_data(df_raw)
-    target_col = "math score"  # You can change to 'reading score' or 'writing score'
+elif dataset_name == "Student Performance":
+    raw_df = mu.load_student_data()
+    pre_df = mu.preprocess_student_data(raw_df)
+    target = 'math score'
 
-# Prepare raw data for baseline model
-df_raw_model = df_raw.dropna()
-df_raw_encoded = pd.get_dummies(df_raw_model.drop(target_col, axis=1), drop_first=True)
-y_raw = df_raw_model[target_col]
-X_raw = df_raw_encoded.fillna(0)
+# Display shape and preview
+st.subheader("Raw Dataset Preview")
+st.dataframe(raw_df.head())
 
-acc_raw = model_utils.train_and_score(pd.concat([X_raw, y_raw], axis=1), target_col)
-acc_clean, report_clean = model_utils.train_and_report(df_clean, target_col)
+st.subheader("Preprocessed Dataset Preview")
+st.dataframe(pre_df.head())
 
-# Visuals
-st.subheader("📈 Accuracy Comparison")
-st.write(f"**Raw Accuracy:** {acc_raw:.2%}")
-st.write(f"**Preprocessed Accuracy:** {acc_clean:.2%}")
+# Train and evaluate models
+raw_acc, raw_report = mu.train_and_evaluate(raw_df, target)
+pre_acc, pre_report = mu.train_and_evaluate(pre_df, target)
 
-st.bar_chart({
-    "Accuracy": {
-        "Raw": acc_raw,
-        "Preprocessed": acc_clean
-    }
-})
+# Show results
+st.subheader("Model Accuracy Comparison")
+st.write(f"🔴 Raw Data Accuracy: **{raw_acc:.2f}**")
+st.write(f"🟢 Preprocessed Data Accuracy: **{pre_acc:.2f}**")
 
-st.subheader("📋 Classification Report (Preprocessed)")
-st.json(report_clean)
+# Optionally show classification report
+with st.expander("Classification Report (Raw Data)"):
+    st.text(raw_report)
 
-st.subheader("🧼 Preprocessed Data Correlation")
-fig_corr, ax = plt.subplots(figsize=(10, 6))
-sns.heatmap(df_clean.corr(), annot=True, cmap="Blues", fmt=".2f", ax=ax)
-st.pyplot(fig_corr)
-
-# Data display
-with st.expander("🔍 Raw Data Sample"):
-    st.dataframe(df_raw.head())
-
-with st.expander("🧹 Preprocessed Data Sample"):
-    st.dataframe(df_clean.head())
+with st.expander("Classification Report (Preprocessed Data)"):
+    st.text(pre_report)
