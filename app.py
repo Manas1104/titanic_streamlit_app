@@ -2,6 +2,7 @@
 import streamlit as st
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pandas as pd  # ✅ Needed for pd.get_dummies and pd.concat
 import model_utils
 
 st.set_page_config(page_title="Data Preprocessing Comparison", layout="wide")
@@ -11,7 +12,7 @@ st.markdown("Compare model accuracy on raw vs. preprocessed data")
 # Sidebar dataset selector
 dataset_choice = st.sidebar.selectbox(
     "Choose Dataset",
-    ("Heart Disease", "Loan Prediction")
+    ("Heart Disease", "Loan Prediction", "Student Performance")
 )
 
 # Load and preprocess
@@ -19,11 +20,17 @@ if dataset_choice == "Heart Disease":
     df_raw = model_utils.load_heart_disease()
     df_clean = model_utils.preprocess_heart_data(df_raw)
     target_col = "target"
+
 elif dataset_choice == "Loan Prediction":
     df_raw = model_utils.load_loan_data()
     df_raw = df_raw.dropna(subset=["Loan_Status"])  # remove rows where target is missing
     df_clean = model_utils.preprocess_loan_data(df_raw)
     target_col = "Loan_Status"
+
+elif dataset_choice == "Student Performance":
+    df_raw = model_utils.load_student_data()
+    df_clean = model_utils.preprocess_student_data(df_raw)
+    target_col = "math score"  # You can change to 'reading score' or 'writing score'
 
 # Prepare raw data for baseline model
 df_raw_model = df_raw.dropna()
