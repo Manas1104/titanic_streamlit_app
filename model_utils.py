@@ -1,88 +1,58 @@
-# model_utils.py
-
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score
 
-# -----------------------
-# Heart Disease Dataset
-# -----------------------
-
-def load_heart_disease():
-    return pd.read_csv("heart.csv")
-
-def preprocess_heart_data(df):
-    scaler = StandardScaler()
-    df_scaled = df.copy()
-    features = df.columns.drop('target')
-    df_scaled[features] = scaler.fit_transform(df_scaled[features])
-    return df_scaled
-
-
-# -----------------------
-# Loan Prediction Dataset
-# -----------------------
-
+# 1. Loan Prediction
 def load_loan_data():
-    return pd.read_csv("train.csv")
+    return pd.read_csv("loan_data.csv")
 
-def preprocess_loan_data(df):
-    df = df.drop(columns=["Loan_ID"], errors="ignore")
+def train_loan_model():
+    df = load_loan_data()
     df = df.dropna()
-    label_cols = df.select_dtypes(include="object").columns
-    le = LabelEncoder()
-    for col in label_cols:
-        df[col] = le.fit_transform(df[col])
-    return df
 
+    X = df.drop("Loan_Status", axis=1).select_dtypes(include=["number"])
+    y = (df["Loan_Status"] == "Y").astype(int)
 
-# -----------------------
-# Student Performance Dataset
-# -----------------------
-
-def load_student_data():
-    return pd.read_csv("student.csv")
-
-def preprocess_student_data(df):
-    df = df.dropna()
-    df = df.copy()
-    # Drop free text columns like "name" if they exist
-    drop_cols = ['name', 'student id', 'id']
-    for col in drop_cols:
-        if col in df.columns:
-            df.drop(columns=[col], inplace=True)
-
-    # Choose a classification target, here: classify pass/fail in math
-    if 'math score' in df.columns:
-        df['math score'] = (df['math score'] >= 50).astype(int)
-
-    label_cols = df.select_dtypes(include="object").columns
-    le = LabelEncoder()
-    for col in label_cols:
-        df[col] = le.fit_transform(df[col])
-    return df
-
-
-# -----------------------
-# Training & Evaluation
-# -----------------------
-
-def train_and_evaluate(df, target):
-    X = df.drop(columns=[target])
-    y = df[target]
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
-
-    model = RandomForestClassifier(n_estimators=100, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+    model = LogisticRegression(max_iter=1000)
     model.fit(X_train, y_train)
 
-    preds = model.predict(X_test)
-    acc = accuracy_score(y_test, preds)
-    report = classification_report(y_test, preds)
+    accuracy = accuracy_score(y_test, model.predict(X_test))
+    return model, accuracy
 
-    return acc, report
+# 2. Heart Disease
+def load_heart_data():
+    return pd.read_csv("heart_data.csv")
+
+def train_heart_model():
+    df = load_heart_data()
+
+    X = df.drop("target", axis=1)
+    y = df["target"]
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1)
+    model = LogisticRegression(max_iter=1000)
+    model.fit(X_train, y_train)
+
+    accuracy = accuracy_score(y_test, model.predict(X_test))
+    return model, accuracy
+
+# 3. Student Performance
+def load_student_data():
+    return pd.read_csv("student_data.csv")
+
+def train_student_model():
+    df = load_student_data()
+
+    df = df.dropna()
+    X = df.drop("pass", axis=1).select_dtypes(include=["number"])
+    y = df["pass"]
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    model = LogisticRegression(max_iter=1000)
+    model.fit(X_train, y_train)
+
+    accuracy = accuracy_score(y_test, model.predict(X_test))
+    return model, accuracy
