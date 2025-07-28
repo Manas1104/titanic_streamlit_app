@@ -35,6 +35,7 @@ def preprocess_data(df):
         df[col] = le.fit_transform(df[col])
 
     # Normalize numeric features (except target)
+        # Normalize numeric values (exclude target)
     if 'survived' in df.columns:
         numeric_cols = df.select_dtypes(include='number').columns.drop('survived')
     else:
@@ -42,6 +43,27 @@ def preprocess_data(df):
 
     scaler = MinMaxScaler()
     df[numeric_cols] = scaler.fit_transform(df[numeric_cols])
+
+    # ✅ Rename columns for better clarity
+    df.rename(columns={
+        'pclass': 'ticket_class',
+        'sex': 'gender',
+        'sibsp': 'siblings_spouses_aboard',
+        'parch': 'parents_children_aboard',
+        'fare': 'ticket_fare',
+        'embarked': 'port_of_embarkation',
+        'class': 'ticket_class_label',
+        'who': 'person_type',
+        'adult_male': 'is_adult_male',
+        'alone': 'traveling_alone',
+        'family_size': 'total_family_members_aboard',
+        'fare_per_person': 'fare_divided_by_family_size',
+        'fare_log': 'log_fare'
+    }, inplace=True)
+
+    return df
+
+    
 
     return df
 
