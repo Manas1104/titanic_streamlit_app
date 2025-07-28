@@ -1,73 +1,88 @@
 # model_utils.py
+
 import pandas as pd
-import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report
 
+# -----------------------
+# Heart Disease Dataset
+# -----------------------
+
 def load_heart_disease():
-    url = "https://raw.githubusercontent.com/ansh941/Machine-Learning/master/Heart%20Disease%20UCI/heart.csv"
-    return pd.read_csv(url)
+    return pd.read_csv("heart.csv")
 
 def preprocess_heart_data(df):
-    df = df.copy()
-
-    # No missing values
-    if df.isnull().sum().sum() > 0:
-        df.fillna(df.mean(), inplace=True)
-
-    # Normalize numeric features (exclude 'target')
-    features = df.drop('target', axis=1)
-    scaler = MinMaxScaler()
-    features_scaled = scaler.fit_transform(features)
-    df_scaled = pd.DataFrame(features_scaled, columns=features.columns)
-    df_scaled['target'] = df['target'].values
+    scaler = StandardScaler()
+    df_scaled = df.copy()
+    features = df.columns.drop('target')
+    df_scaled[features] = scaler.fit_transform(df_scaled[features])
     return df_scaled
+
+
+# -----------------------
+# Loan Prediction Dataset
+# -----------------------
 
 def load_loan_data():
-    url = "https://raw.githubusercontent.com/edyoda/data-science-complete-tutorial/master/Data/loan_prediction.csv"
-    df = pd.read_csv(url)
-    return df
+    return pd.read_csv("train.csv")
 
 def preprocess_loan_data(df):
+    df = df.drop(columns=["Loan_ID"], errors="ignore")
+    df = df.dropna()
+    label_cols = df.select_dtypes(include="object").columns
+    le = LabelEncoder()
+    for col in label_cols:
+        df[col] = le.fit_transform(df[col])
+    return df
+
+
+# -----------------------
+# Student Performance Dataset
+# -----------------------
+
+def load_student_data():
+    return pd.read_csv("student.csv")
+
+def preprocess_student_data(df):
+    df = df.dropna()
     df = df.copy()
-    
-    df.drop(columns=['Loan_ID'], inplace=True, errors='ignore')
-    df['Gender'].fillna(df['Gender'].mode()[0], inplace=True)
-    df['Married'].fillna(df['Married'].mode()[0], inplace=True)
-    df['Dependents'].fillna(df['Dependents'].mode()[0], inplace=True)
-    df['Self_Employed'].fillna(df['Self_Employed'].mode()[0], inplace=True)
-    df['LoanAmount'].fillna(df['LoanAmount'].mean(), inplace=True)
-    df['Loan_Amount_Term'].fillna(df['Loan_Amount_Term'].mode()[0], inplace=True)
-    df['Credit_History'].fillna(df['Credit_History'].mode()[0], inplace=True)
+    # Drop free text columns like "name" if they exist
+    drop_cols = ['name', 'student id', 'id']
+    for col in drop_cols:
+        if col in df.columns:
+            df.drop(columns=[col], inplace=True)
 
-    for col in df.select_dtypes(include='object').columns:
-        df[col] = LabelEncoder().fit_transform(df[col].astype(str))
-    
-    scaler = MinMaxScaler()
-    features = df.drop('Loan_Status', axis=1)
-    features_scaled = scaler.fit_transform(features)
-    df_scaled = pd.DataFrame(features_scaled, columns=features.columns)
-    df_scaled['Loan_Status'] = df['Loan_Status'].values
-    return df_scaled
+    # Choose a classification target, here: classify pass/fail in math
+    if 'math score' in df.columns:
+        df['math score'] = (df['math score'] >= 50).astype(int)
 
-def train_and_report(df, target_col):
-    X = df.drop(target_col, axis=1)
-    y = df[target_col]
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    model = RandomForestClassifier()
+    label_cols = df.select_dtypes(include="object").columns
+    le = LabelEncoder()
+    for col in label_cols:
+        df[col] = le.fit_transform(df[col])
+    return df
+
+
+# -----------------------
+# Training & Evaluation
+# -----------------------
+
+def train_and_evaluate(df, target):
+    X = df.drop(columns=[target])
+    y = df[target]
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+
+    model = RandomForestClassifier(n_estimators=100, random_state=42)
     model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
-    acc = accuracy_score(y_test, y_pred)
-    report = classification_report(y_test, y_pred, output_dict=True)
+
+    preds = model.predict(X_test)
+    acc = accuracy_score(y_test, preds)
+    report = classification_report(y_test, preds)
+
     return acc, report
-
-def train_and_score(df, target_col):
-    X = df.drop(target_col, axis=1)
-    y = df[target_col]
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    model = RandomForestClassifier()
-    model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
-    return accuracy_score(y_test, y_pred)
