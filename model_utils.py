@@ -4,6 +4,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
+from sklearn.metrics import classification_report
 
 def load_data():
     return sns.load_dataset("titanic")
@@ -44,7 +45,18 @@ def preprocess_data(df):
 
     return df
 
+def train_and_report(df):
+    X = df.drop("survived", axis=1)
+    y = df["survived"]
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+    model = RandomForestClassifier()
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+
+    acc = accuracy_score(y_test, y_pred)
+    report = classification_report(y_test, y_pred, output_dict=True)
+    return acc, report
 
 def train_and_score(df):
     X = df.drop("survived", axis=1)
