@@ -9,13 +9,13 @@ import streamlit as st
 
 # Data Loaders
 def load_heart_disease():
-    return pd.read_csv("data/heart.csv")
+    return pd.read_csv("data/heart_data.csv")
 
 def load_loan_data():
-    return pd.read_csv("data/loan.csv")
+    return pd.read_csv("data/loan_data.csv")
 
 def load_student_data():
-    return pd.read_csv("data/student.csv")
+    return pd.read_csv("data/student_data.csv")
 
 # Preprocessing Functions
 def preprocess_heart_data(df):
