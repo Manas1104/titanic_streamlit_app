@@ -10,30 +10,30 @@ def load_data():
 
 def preprocess_data(df):
     df = df.copy()
-    
-    # Drop problematic or redundant columns
+
+    # Drop irrelevant or high-missing columns
     drop_cols = ['deck', 'embark_town', 'alive']
-    for col in drop_cols:
-        if col in df.columns:
-            df.drop(columns=col, inplace=True)
+    df.drop(columns=[col for col in drop_cols if col in df.columns], inplace=True, errors='ignore')
 
     # Fill missing values
-    if 'age' in df.columns:
-        df['age'].fillna(df['age'].mean(), inplace=True)
-
-    if 'embarked' in df.columns:
-        df['embarked'].fillna(df['embarked'].mode()[0], inplace=True)
-
+    df['age'] = df['age'].fillna(df['age'].mean())
+    df['embarked'] = df['embarked'].fillna(df['embarked'].mode()[0])
     df.dropna(inplace=True)
-    df.drop_duplicates(inplace=True)
 
-    # Encode categorical columns
-    for col in df.select_dtypes(include=['object', 'category']).columns:
-        df[col] = df[col].astype(str)  # Ensure all values are string
+    # Feature Engineering
+    df['family_size'] = df['sibsp'] + df['parch'] + 1
+    df['fare_per_person'] = df['fare'] / df['family_size']
+
+    # Bin fare (log scaled)
+    df['fare_log'] = np.log1p(df['fare'])
+
+    # Encode categorical variables safely
+    for col in df.select_dtypes(include=['object', 'category']):
+        df[col] = df[col].astype(str)
         le = LabelEncoder()
         df[col] = le.fit_transform(df[col])
 
-    # Normalize numerical columns (exclude target)
+    # Normalize numeric values (exclude target)
     if 'survived' in df.columns:
         numeric_cols = df.select_dtypes(include='number').columns.drop('survived')
     else:
@@ -43,6 +43,7 @@ def preprocess_data(df):
     df[numeric_cols] = scaler.fit_transform(df[numeric_cols])
 
     return df
+
 
 
 def train_and_score(df):
