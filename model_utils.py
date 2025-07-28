@@ -9,22 +9,41 @@ def load_data():
     return sns.load_dataset("titanic")
 
 def preprocess_data(df):
-    df = df.drop(columns=['deck', 'embark_town', 'alive'])
     df = df.copy()
-    df['age'].fillna(df['age'].mean(), inplace=True)
-    df['embarked'].fillna(df['embarked'].mode()[0], inplace=True)
+    
+    # Drop problematic or redundant columns
+    drop_cols = ['deck', 'embark_town', 'alive']
+    for col in drop_cols:
+        if col in df.columns:
+            df.drop(columns=col, inplace=True)
+
+    # Fill missing values
+    if 'age' in df.columns:
+        df['age'].fillna(df['age'].mean(), inplace=True)
+
+    if 'embarked' in df.columns:
+        df['embarked'].fillna(df['embarked'].mode()[0], inplace=True)
+
     df.dropna(inplace=True)
     df.drop_duplicates(inplace=True)
 
-    for col in df.select_dtypes(include='object').columns:
+    # Encode categorical columns
+    for col in df.select_dtypes(include=['object', 'category']).columns:
+        df[col] = df[col].astype(str)  # Ensure all values are string
         le = LabelEncoder()
         df[col] = le.fit_transform(df[col])
 
+    # Normalize numerical columns (exclude target)
+    if 'survived' in df.columns:
+        numeric_cols = df.select_dtypes(include='number').columns.drop('survived')
+    else:
+        numeric_cols = df.select_dtypes(include='number').columns
+
     scaler = MinMaxScaler()
-    numeric_cols = df.select_dtypes(include='number').columns.drop('survived')
     df[numeric_cols] = scaler.fit_transform(df[numeric_cols])
 
     return df
+
 
 def train_and_score(df):
     X = df.drop("survived", axis=1)
