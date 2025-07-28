@@ -1,10 +1,10 @@
 import pandas as pd
 import seaborn as sns
+import numpy as np  # ✅ Add this line
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import classification_report
+from sklearn.metrics import accuracy_score, classification_report
 
 def load_data():
     return sns.load_dataset("titanic")
@@ -25,16 +25,16 @@ def preprocess_data(df):
     df['family_size'] = df['sibsp'] + df['parch'] + 1
     df['fare_per_person'] = df['fare'] / df['family_size']
 
-    # Bin fare (log scaled)
+    # Log scale fare
     df['fare_log'] = np.log1p(df['fare'])
 
-    # Encode categorical variables safely
+    # Encode categorical variables
     for col in df.select_dtypes(include=['object', 'category']):
         df[col] = df[col].astype(str)
         le = LabelEncoder()
         df[col] = le.fit_transform(df[col])
 
-    # Normalize numeric values (exclude target)
+    # Normalize numeric features (except target)
     if 'survived' in df.columns:
         numeric_cols = df.select_dtypes(include='number').columns.drop('survived')
     else:
